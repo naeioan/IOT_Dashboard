@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+<title>Smart Home Dashboard</title>
+<script src="http://code.jquery.com/jquery-2.0.0.js"></script>
+<script type="text/javascript" src="./RGraph/libraries/RGraph.common.core.js" ></script>
+<script type="text/javascript" src="./RGraph/libraries/RGraph.thermometer.js" ></script>
+<script type="text/javascript" src="./RGraph/libraries/RGraph.gauge.js" ></script>
+</head>
+<body>
+<h2>Smart Home Dashboard</h2>
+<label id="conn_text"></label><br />
+<br>
+<label id="cpu_temp">CPU temp: </label><br />
+<label id="room_a_temp">Room_A_temp: </label><br />
+<label id="water_pressure">Water Pressure: </label><br />
+<br>
+<br>
+<canvas id="cvs_E" width="150" height="200">[No canvas support]</canvas>
+<canvas id="cvs_CPU" width="150" height="200">[No canvas support]</canvas>
+<canvas id="cvs_Gge" width="300" height="300">[No canvas suppport]</canvas>
+<script>
+
+  $(document).ready(function () {
+    var ws = new WebSocket("ws://192.168.0.201:8888/ws");
+
+    ws.onopen = function(evt) {
+      var conn_status = document.getElementById('conn_text');
+      conn_status.innerHTML = "Status: Connected!"
+    };
+                
+    ws.onmessage = function(evt) {
+      var room_a_reading = document.getElementById('room_a_temp');
+      var cpu_reading = document.getElementById('cpu_temp');
+      var water_reading = document.getElementById('water_pressure');
+      current_temp = (evt.data).split(";",8);			
+      room_a_reading.innerHTML = "Room A Temp : " + current_temp[5];
+      drawGraph_room(current_temp[5],'Room A Temp');                        
+      cpu_reading.innerHTML = "CPU sensor: " + current_temp[7];
+      drawGraph_environment(current_temp[7]);
+      water_reading.innerHTML = "Water pressure: " + current_temp[6];
+      drawGraph_gauge(current_temp[6]);
+      
+    };
+
+    ws.onclose = function(evt) {
+      var conn_status = document.getElementById('conn_text');
+      conn_status.innerHTML = "Status: disonnected!"
+    };
+  });
+
+  function drawGraph_environment(temp){
+    var canvas = document.getElementById('cvs_E');
+    RGraph.Clear(canvas);
+
+    var thermometer = new RGraph.Thermometer('cvs_E', 0,100,     eval(temp))     	
+    .set('title.side', 'CPU Temp')
+    .set('value.label', false)
+    .set('scale.visible', true)
+    .set('scale.decimals',2)
+    .set('gutter.left', 80)
+    .set('gutter.right', 40)
+    .draw();
+  }
+	
+  function drawGraph_room(temp,title){
+    var canvas = document.getElementById('cvs_CPU');
+    RGraph.Clear(canvas);
+
+    var thermometer = new RGraph.Thermometer('cvs_CPU', 0,100,     eval(temp))
+    .set('title.side', title)
+    .set('value.label', false)
+    .set('scale.visible', true)
+    .set('scale.decimals',2)
+    .set('gutter.left', 80)
+    .set('gutter.right', 40)
+    .draw();
+  }
+
+  function drawGraph_gauge(temp){
+    var canvas = document.getElementById('cvs_Gge');
+    RGraph.Clear(canvas);
+    var gauge = new RGraph.Gauge('cvs_Gge',0,100,eval(temp))
+	.set('scale.decimals',0)
+	.set('tickmarks.small',50)        
+	.set('tickmarks.big',5)
+	.set('title.top','Water Pressure')
+	.set('title.top.size',20)
+	.set('title.bottom','kPa')
+	.set('title.bottom.color','#aaa')
+	.set('border.outer','Gradient(white:white:white:white:white:white:white:white:white:white:#aaa)')
+	.draw();
+    }
+</script>
+</body>
+</html>
